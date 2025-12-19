@@ -1,5 +1,7 @@
+#include <Arduino.h>
 #include <LiquidCrystal.h>
 #include <Stepper.h>
+#include <math.h>
 
 LiquidCrystal lcd(8, 9, 13, 12, 11, 10);
 
@@ -30,9 +32,15 @@ void loop()
     if (millis() - lastTime >= 1000)
     {
         lastTime = millis();
-        float voltage = analogRead(A0) * (5.0 / 1023.0);
-        float Rntc = 100000 * ((5.0 / voltage) - 1.0);
-        float temperatureC = 1.0 / ((1.0 / (25.0 + 273.15)) + (1.0 / 3950) * log(Rntc / 100000)) - 273.15;
+        int rawValue = analogRead(A0);
+        float voltage = rawValue * (5.0 / 1023.0);
+        
+        // NTC GND'ye, 100k Direnç 5V'a bağlı (Standart)
+        if (voltage > 4.9) voltage = 4.9;
+        if (voltage < 0.1) voltage = 0.1;
+
+        float Rntc = 100000.0 * (5.0 - voltage) / voltage;
+        float temperatureC = 1.0 / ((1.0 / (25.0 + 273.15)) + (log(Rntc / 100000.0) / 3950.0)) - 273.15;
 
         lcd.clear();
         lcd.setCursor(0, 0);
@@ -56,14 +64,6 @@ void loop()
 
         */
 
-    static unsigned long lastA5Toggle = 0;
-    static bool a5State = false;
-    if (millis() - lastA5Toggle >= 2000)
-    {
-        lastA5Toggle = millis();
-        a5State = !a5State;
-        digitalWrite(A5, a5State ? HIGH : LOW);
-    }
+    digitalWrite(A5, HIGH);
 
-    
 }
