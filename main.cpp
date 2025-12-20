@@ -32,8 +32,6 @@ void loop()
     static unsigned long lastTime = 0;
     static float lastTemperatureC = NAN;
 
-    bool btnOn = (digitalRead(A4) == LOW);
-
     if (millis() - lastTime >= 1000)
     {
         lastTime = millis();
@@ -49,6 +47,8 @@ void loop()
         float Rntc = 100000.0 * (5.0 - voltage) / voltage;
         lastTemperatureC = 1.0 / ((1.0 / (25.0 + 273.15)) + (log(Rntc / 100000.0) / 3950.0)) - 273.15;
 
+        digitalWrite(A5, (!isnan(lastTemperatureC) && lastTemperatureC >= 100.0) ? LOW : HIGH);
+
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("Sicaklik:");
@@ -57,9 +57,7 @@ void loop()
         lcd.print(" C");
     }
 
-    bool shouldRun = btnOn && !isnan(lastTemperatureC) && (lastTemperatureC > 60);
-
-    if (shouldRun)
+    if ((digitalRead(A4) == LOW) && !isnan(lastTemperatureC) && (lastTemperatureC > 60))
     {
         digitalWrite(STEP, HIGH);
         delayMicroseconds(3000);
@@ -69,11 +67,6 @@ void loop()
     }
     else
     {
-        if (running)
-        {
-            digitalWrite(STEP, LOW);
-        }
+        digitalWrite(STEP, LOW);
     }
-
-    running = shouldRun;
 }
