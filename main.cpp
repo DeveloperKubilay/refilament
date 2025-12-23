@@ -55,15 +55,16 @@ void loop()
         lcd.setCursor(0, 1);
         lcd.print(lastTemperatureC);
         lcd.print(" C");
+        myStepper.step(4);
     }
 
     if ((digitalRead(A4) == LOW) && !isnan(lastTemperatureC) && (lastTemperatureC > 60))
     {
+        // gerekirse 200ms yapılabilir
         digitalWrite(STEP, HIGH);
-        delayMicroseconds(3000);
+        delayMicroseconds(500);
         digitalWrite(STEP, LOW);
-        delayMicroseconds(3000);
-        myStepper.step(1);
+        delayMicroseconds(500);
     }
     else
     {
