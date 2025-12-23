@@ -47,7 +47,7 @@ void loop()
         float Rntc = 100000.0 * (5.0 - voltage) / voltage;
         lastTemperatureC = 1.0 / ((1.0 / (25.0 + 273.15)) + (log(Rntc / 100000.0) / 3950.0)) - 273.15;
 
-        digitalWrite(A5, (!isnan(lastTemperatureC) && lastTemperatureC >= 100.0) ? LOW : HIGH);
+        digitalWrite(A5, (!isnan(lastTemperatureC) && lastTemperatureC >= 200.0) ? LOW : HIGH);
 
         lcd.clear();
         lcd.setCursor(0, 0);
