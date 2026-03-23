@@ -63,7 +63,7 @@ void loop()
         lcd.setCursor(0, 1);
         lcd.print(btnPressed ? "Buton: Acik    " : "Buton: Kapali  ");
         
-        myStepper.step(4);
+        myStepper.step(4);//errs
     }
 
     if (btnPressed)
