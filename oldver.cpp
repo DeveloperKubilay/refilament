@@ -22,7 +22,7 @@ void setup()
     pinMode(A4, INPUT_PULLUP);
 
     digitalWrite(DIR, HIGH);
-    digitalWrite(A5, LOW);
+    digitalWrite(A5, HIGH);
 
     myStepper.setSpeed(10);
 }
@@ -32,15 +32,12 @@ void loop()
     static unsigned long lastTime = 0;
     static float lastTemperatureC = NAN;
     static bool lastBtnState = true;
-    static unsigned long motorStartTime = 0;
-    static bool motorCycleActive = false;
 
-    unsigned long currentTime = millis();
     bool btnPressed = (digitalRead(A4) == LOW);
 
-    if (currentTime - lastTime >= 1000)
+    if (millis() - lastTime >= 1000)
     {
-        lastTime = currentTime;
+        lastTime = millis();
         int rawValue = analogRead(A0);
         float voltage = rawValue * (5.0 / 1023.0);
 
@@ -52,43 +49,40 @@ void loop()
         float Rntc = 100000.0 * (5.0 - voltage) / voltage;
         lastTemperatureC = 1.0 / ((1.0 / (25.0 + 273.15)) + (log(Rntc / 100000.0) / 3950.0)) - 273.15;
 
-        digitalWrite(A5, (!isnan(lastTemperatureC) && lastTemperatureC >= 200.0) ? HIGH : LOW);
+        digitalWrite(A5, (!isnan(lastTemperatureC) && lastTemperatureC >= 200.0) ? LOW : HIGH);
 
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("Sicaklik:");
         lcd.print(lastTemperatureC, 1);
         lcd.print(" C");
-        
         lcd.setCursor(0, 1);
-        lcd.print(btnPressed ? "Buton: Acik    " : "Buton: Kapali  ");
-        
+        if (btnPressed)
+            lcd.print("Buton: Acik    ");
+        else
+            lcd.print("Buton: Kapali  ");
         myStepper.step(4);
+        lastBtnState = btnPressed;
+    }
+    else if (btnPressed != lastBtnState)
+    {
+        lcd.setCursor(0, 1);
+        if (btnPressed)
+            lcd.print("Buton: Acik    ");
+        else
+            lcd.print("Buton: Kapali  ");
+        lastBtnState = btnPressed;
     }
 
-    if (btnPressed)
+    if (btnPressed && !isnan(lastTemperatureC) && (lastTemperatureC > 60))
     {
-        if (!motorCycleActive) {
-            motorStartTime = currentTime;
-            motorCycleActive = true;
-        }
-        
-        unsigned long elapsed = currentTime - motorStartTime;
-        
-        if (elapsed < 5000) {
-            digitalWrite(STEP, HIGH);
-            delayMicroseconds(2000);
-            digitalWrite(STEP, LOW);
-            delayMicroseconds(2000);
-        } else if (elapsed < 8000) {
-            digitalWrite(STEP, LOW);
-        } else {
-            motorStartTime = currentTime;
-        }
+        digitalWrite(STEP, HIGH);
+        delayMicroseconds(2000);
+        digitalWrite(STEP, LOW);
+        delayMicroseconds(2000);
     }
     else
     {
         digitalWrite(STEP, LOW);
-        motorCycleActive = false;
     }
 }
