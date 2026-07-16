@@ -4,13 +4,20 @@
 #include <math.h>
 
 LiquidCrystal lcd(8, 9, 13, 12, 11, 10);
-// Pinler: IN1->4, IN2->3, IN3->2, IN4->A5
-Stepper myStepper(2048, 5, 4, 3, 2);
+
+// myStepper (28BYJ-48) Pin Bağlantıları: 
+// IN1 -> 5, IN2 -> 4, IN3 -> 3, IN4 -> 2
+// (Eski kodda IN4 -> A5 yazılmıştı ancak A5 mosfet için kullanılıyor, o yüzden IN4'ü 2'ye bağlamalısın)
+Stepper myStepper(2048, 5, 3, 4, 2); 
 
 #define STEP 6
 #define DIR 7
 
-bool running = false;
+// İstenilen hedef sıcaklık (Santigrat / Celsius cinsinden buraya yazabilirsin)
+int hedefSicaklik = 200; 
+
+// Mosfetin açık olup olmadığını takip etmek için bir değişken
+bool isHeaterOn = false; 
 
 void setup()
 {
@@ -31,7 +38,6 @@ void loop()
 {
     static unsigned long lastTime = 0;
     static float lastTemperatureC = NAN;
-    static bool lastBtnState = true;
     static unsigned long motorStartTime = 0;
     static bool motorCycleActive = false;
 
@@ -41,18 +47,20 @@ void loop()
     if (currentTime - lastTime >= 1000)
     {
         lastTime = currentTime;
+        
         int rawValue = analogRead(A0);
-        float voltage = rawValue * (5.0 / 1023.0);
+        
+        // NTC Sıcaklık Ölçümü (5V dalgalanmasından bağımsız, doğrudan ADC oranıyla)
+        if (rawValue > 0 && rawValue < 1023) {
+            float Rntc = 100000.0 * (1023.0 - rawValue) / (float)rawValue;
+            // 25 derece = 298.15 Kelvin
+            lastTemperatureC = 1.0 / ((1.0 / 298.15) + (log(Rntc / 100000.0) / 3950.0)) - 273.15;
+        }
 
-        if (voltage > 4.9)
-            voltage = 4.9;
-        if (voltage < 0.1)
-            voltage = 0.1;
-
-        float Rntc = 100000.0 * (5.0 - voltage) / voltage;
-        lastTemperatureC = 1.0 / ((1.0 / (25.0 + 273.15)) + (log(Rntc / 100000.0) / 3950.0)) - 273.15;
-
-        digitalWrite(A5, (!isnan(lastTemperatureC) && lastTemperatureC >= 200.0) ? HIGH : LOW);
+        // Isıtıcı (Mosfet) Kontrolü:
+        // Sıcaklık ayarladığın "hedefSicaklik" değerinden KÜÇÜKSE mosfet açılır ve ısıtır.
+        isHeaterOn = (!isnan(lastTemperatureC) && lastTemperatureC < hedefSicaklik);
+        digitalWrite(A5, isHeaterOn ? HIGH : LOW);
 
         lcd.clear();
         lcd.setCursor(0, 0);
@@ -63,10 +71,12 @@ void loop()
         lcd.setCursor(0, 1);
         lcd.print(btnPressed ? "Buton: Acik    " : "Buton: Kapali  ");
         
-      //  myStepper.step(4);//errs
+        // myStepper.step(4); // Motoru çalıştırmak için bu satırı açabilirsin (Şu an yorum satırında)
     }
 
-    if (btnPressed)
+    // 2. Step Motor (NEMA) Kontrolü
+    // Butona basılmışsa VE Isıtıcı (Mosfet) KAPALIYSA çalışır (Amper yetmeme sorununu çözer)
+    if (btnPressed && !isHeaterOn) 
     {
         if (!motorCycleActive) {
             motorStartTime = currentTime;
