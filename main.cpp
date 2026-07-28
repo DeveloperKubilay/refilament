@@ -3,7 +3,7 @@
 #include <Stepper.h>
 #include <math.h>
 
-LiquidCrystal lcd(8, 9, 13, 12, 11, 10);
+LiquidCrystal lcd(8, 9, A2, 12, 11, 10);
 
 // myStepper (28BYJ-48) Pin Bağlantıları:
 // IN1 -> 5, IN2 -> 4, IN3 -> 3, IN4 -> 2
@@ -73,7 +73,7 @@ void loop()
         lcd.print(voltage, 2);
         lcd.print("V");
 
-        myStepper.step(4); // Motoru çalıştırmak için bu satırı açabilirsin (Şu an yorum satırında)
+        myStepper.step(10); // Motoru çalıştırmak için bu satırı açabilirsin (Şu an yorum satırında)
     }
 
     // 2. Step Motor (NEMA) Kontrolü
